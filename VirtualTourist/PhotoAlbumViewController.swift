@@ -30,7 +30,7 @@ class PhotoAlbumViewController : UIViewController, MKMapViewDelegate {
         // Set the region to center mapview on current coordinates
         if let coordinates = coordinates {
             // set the region
-            let span = MKCoordinateSpanMake(0.100, 0.100)
+            let span = MKCoordinateSpanMake(0.500, 0.500)
             let region =  MKCoordinateRegion(center: coordinates, span: span)
             self.mapView.setRegion(region, animated: true)
             

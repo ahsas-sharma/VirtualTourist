@@ -19,6 +19,7 @@ class MapViewController: UIViewController, MKMapViewDelegate {
     
     let delegate = UIApplication.shared.delegate as! AppDelegate
     var annotations = [MKPointAnnotation]()
+    var draggablePin : MKPointAnnotation!
     var fetchedResultsController : NSFetchedResultsController<NSFetchRequestResult>?{
         didSet {
             fetchedResultsController?.delegate = self
@@ -37,7 +38,7 @@ class MapViewController: UIViewController, MKMapViewDelegate {
         // Create the FetchedResultsController
         fetchedResultsController = NSFetchedResultsController(fetchRequest: fr, managedObjectContext: delegate.stack.context, sectionNameKeyPath: nil, cacheName: nil)
         
-        updateAnnotations()
+        loadSavedPins()
         
     }
     
@@ -49,16 +50,26 @@ class MapViewController: UIViewController, MKMapViewDelegate {
     
     // MARK: - MKMapView -
     
-    
     @IBAction func addAnnotation(_ sender: UILongPressGestureRecognizer) {
+        
+        let point = sender.location(in: mapView)
+        let coordinate = mapView.convert(point, toCoordinateFrom: mapView)
 
+        if draggablePin != nil {
+            draggablePin.coordinate = coordinate
+        }
+        
         if sender.state == .began {
             print("sender state is .began")
-            let point = sender.location(in: mapView)
-            let coordinate = mapView.convert(point, toCoordinateFrom: mapView)
+            draggablePin = MKPointAnnotation()
+            draggablePin.coordinate = coordinate
+            mapView.addAnnotation(draggablePin)
+        }
+
+        if sender.state == .ended {
+            draggablePin = nil
             _ = Pin(lat: coordinate.latitude, long: coordinate.longitude, context: delegate.stack.context)
             delegate.stack.save()
-            updateAnnotations()
         }
     }
     
@@ -68,7 +79,9 @@ class MapViewController: UIViewController, MKMapViewDelegate {
         
         if pinView == nil {
             pinView = MKPinAnnotationView(annotation: annotation, reuseIdentifier: reuseId)
+            pinView?.isDraggable = false
             pinView!.canShowCallout = false
+            pinView?.animatesDrop = true
         } else {
             pinView!.annotation = annotation
         }
@@ -77,7 +90,6 @@ class MapViewController: UIViewController, MKMapViewDelegate {
     }
     
     func mapView(_ mapView: MKMapView, didSelect view: MKAnnotationView) {
-        print("Did Select AnnotationView: \(String(describing: view.annotation?.coordinate))")
         
         let photoAlbumVC = self.storyboard?.instantiateViewController(withIdentifier: "PhotoAlbumViewController") as! PhotoAlbumViewController
         
@@ -87,7 +99,7 @@ class MapViewController: UIViewController, MKMapViewDelegate {
         self.navigationController?.pushViewController(photoAlbumVC, animated: true)
     }
     
-    func updateAnnotations() {
+    func loadSavedPins() {
         if let fc = fetchedResultsController {
             do {
                 try fc.performFetch()
@@ -99,16 +111,12 @@ class MapViewController: UIViewController, MKMapViewDelegate {
                 return
             }
             
-            print("Count: \(pins.count)")
-            
-            self.mapView.removeAnnotations(self.annotations)
-            annotations.removeAll()
+            print("Pin Count: \(pins.count)")
+            mapView.removeAnnotations(mapView.annotations)
             
             for pin in pins {
-                self.annotations.append(pin.annotation)
+                mapView.addAnnotation(pin.annotation)
             }
-            
-            mapView.addAnnotations(annotations)
         }
     }
 
@@ -128,7 +136,6 @@ extension MapViewController: NSFetchedResultsControllerDelegate {
     
     func controllerDidChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
         debugPrint("====== NSFetchedResultController didChangeContent ======")
-//        updateAnnotations()
     }
 }
 

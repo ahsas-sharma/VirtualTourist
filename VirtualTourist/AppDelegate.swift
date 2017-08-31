@@ -6,6 +6,8 @@
 //  Copyright © 2017 Ahsas Sharma. All rights reserved.
 //
 
+// TODO:- Fix album view layout for landscape
+// TODO:- The center of the map and the zoom level should be persistent. If the app is turned off, the map should return to the same state when it is turned on again.
 import UIKit
 
 @UIApplicationMain
@@ -17,11 +19,11 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplicationLaunchOptionsKey: Any]?) -> Bool {
         // Override point for customization after application launch.
-//        do {
-//            try stack.dropAllData()
-//        } catch {
-//            print("Unable to delete data")
-//        }
+        do {
+            try stack.dropAllData()
+        } catch {
+            print("Unable to delete data")
+        }
         return true
     }
 

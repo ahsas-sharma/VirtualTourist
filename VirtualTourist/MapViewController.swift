@@ -18,15 +18,14 @@ class MapViewController: UIViewController, MKMapViewDelegate {
     @IBOutlet weak var mapView: MKMapView!
     
     let delegate = UIApplication.shared.delegate as! AppDelegate
-    var annotations = [MKPointAnnotation]()
+    let flickrClient = FlickrClient.sharedInstance()
+    
     var draggablePin : MKPointAnnotation!
     var fetchedResultsController : NSFetchedResultsController<NSFetchRequestResult>?{
         didSet {
             fetchedResultsController?.delegate = self
-            print("didSet fetchedResultsController")
         }
     }
-
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -35,9 +34,10 @@ class MapViewController: UIViewController, MKMapViewDelegate {
         let fr = NSFetchRequest<NSFetchRequestResult>(entityName: "Pin")
         fr.sortDescriptors = [NSSortDescriptor(key: "lat", ascending: true)]
         
-        // Create the FetchedResultsController
+        // Initialize the FetchedResultsController
         fetchedResultsController = NSFetchedResultsController(fetchRequest: fr, managedObjectContext: delegate.stack.context, sectionNameKeyPath: nil, cacheName: nil)
         
+        // Load saved pins from the disk
         loadSavedPins()
         
     }
@@ -45,6 +45,7 @@ class MapViewController: UIViewController, MKMapViewDelegate {
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         self.navigationController?.navigationBar.isHidden = true
+        
     }
     
     
@@ -60,7 +61,6 @@ class MapViewController: UIViewController, MKMapViewDelegate {
         }
         
         if sender.state == .began {
-            print("sender state is .began")
             draggablePin = MKPointAnnotation()
             draggablePin.coordinate = coordinate
             mapView.addAnnotation(draggablePin)
@@ -68,6 +68,19 @@ class MapViewController: UIViewController, MKMapViewDelegate {
 
         if sender.state == .ended {
             draggablePin = nil
+
+            // Fetch random page
+            flickrClient.fetchImagesForCoordinates(lat: coordinate.latitude, long: coordinate.longitude, completionHandlerForFetch: {
+                (result, error) in
+                
+                if error == nil {
+                    print("Result : \(String(describing: result))")
+                    
+                } else {
+                    print("There was an error. :\(String(describing: error))")
+                }
+            })
+            // Create a new instance of Pin and save context
             _ = Pin(lat: coordinate.latitude, long: coordinate.longitude, context: delegate.stack.context)
             delegate.stack.save()
         }
@@ -93,8 +106,7 @@ class MapViewController: UIViewController, MKMapViewDelegate {
         
         let photoAlbumVC = self.storyboard?.instantiateViewController(withIdentifier: "PhotoAlbumViewController") as! PhotoAlbumViewController
         
-        photoAlbumVC.coordinates = view.annotation?.coordinate
-        photoAlbumVC.annotation = view.annotation
+        photoAlbumVC.selectedAnnotation = view.annotation
         
         self.navigationController?.pushViewController(photoAlbumVC, animated: true)
     }

@@ -37,3 +37,8 @@ extension Album {
     @NSManaged public func removeFromPhoto(_ values: NSSet)
 
 }
+
+
+
+
+
